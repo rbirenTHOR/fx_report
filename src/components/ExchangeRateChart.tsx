@@ -8,6 +8,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler,
 } from 'chart.js';
 import { format } from 'date-fns';
 
@@ -18,35 +19,46 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 interface ExchangeRateChartProps {
   data: { date: Date; value: number }[];
   title: string;
-  showLabels?: boolean;
 }
 
-export function ExchangeRateChart({
-  data,
-  title,
-  showLabels = true,
-}: ExchangeRateChartProps) {
-  // Sample data points for labels (show ~8-10 labels max)
-  const labelInterval = Math.max(1, Math.floor(data.length / 10));
+export function ExchangeRateChart({ data, title }: ExchangeRateChartProps) {
+  if (data.length === 0) {
+    return (
+      <div className="chart-container">
+        <div className="chart-title">{title}</div>
+        <div className="chart-empty">No data available</div>
+      </div>
+    );
+  }
+
+  // Calculate min/max for better Y-axis scaling
+  const values = data.map((d) => d.value);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const padding = (maxValue - minValue) * 0.1 || 0.01;
 
   const chartData = {
-    labels: data.map((d) => format(d.date, 'MMM dd')),
+    labels: data.map((d) => format(d.date, 'MMM d')),
     datasets: [
       {
-        data: data.map((d) => d.value),
-        borderColor: '#1f4e79',
-        backgroundColor: '#1f4e79',
+        data: values,
+        borderColor: '#1a5276',
+        backgroundColor: 'rgba(26, 82, 118, 0.08)',
         borderWidth: 2,
-        pointRadius: 3,
-        pointBackgroundColor: '#1f4e79',
-        tension: 0,
-        fill: false,
+        pointRadius: data.length > 60 ? 0 : data.length > 30 ? 2 : 3,
+        pointHoverRadius: 5,
+        pointBackgroundColor: '#1a5276',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1,
+        tension: 0.3,
+        fill: true,
       },
     ],
   };
@@ -54,6 +66,10 @@ export function ExchangeRateChart({
   const options = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      intersect: false,
+      mode: 'index' as const,
+    },
     plugins: {
       legend: {
         display: false,
@@ -63,6 +79,24 @@ export function ExchangeRateChart({
       },
       tooltip: {
         enabled: true,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleFont: { size: 12, weight: 'bold' as const },
+        bodyFont: { size: 12 },
+        padding: 10,
+        cornerRadius: 6,
+        displayColors: false,
+        callbacks: {
+          title: (items: any[]) => {
+            if (items.length > 0) {
+              const idx = items[0].dataIndex;
+              return format(data[idx].date, 'MMM d, yyyy');
+            }
+            return '';
+          },
+          label: (item: any) => {
+            return `Rate: ${item.raw.toFixed(4)}`;
+          },
+        },
       },
     },
     scales: {
@@ -73,50 +107,55 @@ export function ExchangeRateChart({
         },
         ticks: {
           maxTicksLimit: 5,
-          font: {
-            size: 10,
-          },
+          font: { size: 10 },
+          color: '#666',
+        },
+        border: {
+          display: false,
         },
       },
       y: {
-        display: false,
+        display: true,
+        position: 'right' as const,
+        min: minValue - padding,
+        max: maxValue + padding,
         grid: {
+          color: 'rgba(0, 0, 0, 0.05)',
+        },
+        ticks: {
+          maxTicksLimit: 4,
+          font: { size: 9 },
+          color: '#888',
+          callback: (value: any) => value.toFixed(2),
+        },
+        border: {
           display: false,
         },
       },
     },
-    elements: {
-      point: {
-        radius: 3,
-      },
-    },
   };
+
+  // Get first and last values for display
+  const firstValue = data[0]?.value;
+  const lastValue = data[data.length - 1]?.value;
+  const change = lastValue - firstValue;
+  const changeClass = change >= 0 ? 'up' : 'down';
 
   return (
     <div className="chart-container">
-      <div className="chart-title">{title}</div>
+      <div className="chart-header">
+        <span className="chart-title">{title}</span>
+        <span className={`chart-change ${changeClass}`}>
+          {change >= 0 ? '+' : ''}{change.toFixed(4)}
+        </span>
+      </div>
       <div className="chart-wrapper">
         <Line data={chartData} options={options} />
-        {showLabels && (
-          <div className="chart-labels">
-            {data.map((point, index) => {
-              if (index % labelInterval === 0 || index === data.length - 1) {
-                return (
-                  <div
-                    key={index}
-                    className="data-label"
-                    style={{
-                      left: `${(index / (data.length - 1)) * 100}%`,
-                    }}
-                  >
-                    {point.value.toFixed(4)}
-                  </div>
-                );
-              }
-              return null;
-            })}
-          </div>
-        )}
+      </div>
+      <div className="chart-footer">
+        <span className="chart-value">{firstValue.toFixed(4)}</span>
+        <span className="chart-arrow">→</span>
+        <span className="chart-value">{lastValue.toFixed(4)}</span>
       </div>
     </div>
   );

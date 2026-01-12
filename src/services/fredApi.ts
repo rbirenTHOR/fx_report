@@ -1,7 +1,21 @@
 import type { FredResponse, ExchangeRateData } from '../types';
 
 const FRED_API_KEY = 'f146204c260b5bdc521ac704bf795d27';
-const FRED_BASE_URL = 'https://api.stlouisfed.org/fred/series/observations';
+const FRED_BASE_URL = '/api/fred/series/observations';
+
+// Parse YYYY-MM-DD as local date to avoid timezone issues
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+// Format date as YYYY-MM-DD in local time
+function formatDateForApi(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 // FRED series IDs
 export const SERIES_IDS = {
@@ -24,16 +38,42 @@ export async function fetchFredData(
   return response.json();
 }
 
-export async function getExchangeRateData(
-  seriesId: string,
-  daysBack: number = 120
-): Promise<ExchangeRateData> {
+export async function getLatestAvailableDate(seriesId: string): Promise<Date> {
+  // Fetch recent data to find the latest available date
   const endDate = new Date();
   const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 30); // Look back 30 days
+
+  const response = await fetchFredData(
+    seriesId,
+    formatDateForApi(startDate),
+    formatDateForApi(endDate)
+  );
+
+  // Filter out missing values and find the latest date
+  const validObservations = response.observations
+    .filter((obs) => obs.value !== '.')
+    .map((obs) => parseLocalDate(obs.date))
+    .sort((a, b) => b.getTime() - a.getTime()); // Most recent first
+
+  if (validObservations.length === 0) {
+    throw new Error('No data available');
+  }
+
+  return validObservations[0];
+}
+
+export async function getExchangeRateData(
+  seriesId: string,
+  daysBack: number = 120,
+  asOfDate?: Date
+): Promise<ExchangeRateData> {
+  const endDate = asOfDate || new Date();
+  const startDate = new Date(endDate);
   startDate.setDate(startDate.getDate() - daysBack - 30); // Extra buffer for weekends/holidays
 
   // Also fetch prior year data
-  const priorYearEnd = new Date();
+  const priorYearEnd = new Date(endDate);
   priorYearEnd.setFullYear(priorYearEnd.getFullYear() - 1);
   const priorYearStart = new Date(priorYearEnd);
   priorYearStart.setDate(priorYearStart.getDate() - 14);
@@ -41,21 +81,21 @@ export async function getExchangeRateData(
   const [currentData, priorYearData] = await Promise.all([
     fetchFredData(
       seriesId,
-      startDate.toISOString().split('T')[0],
-      endDate.toISOString().split('T')[0]
+      formatDateForApi(startDate),
+      formatDateForApi(endDate)
     ),
     fetchFredData(
       seriesId,
-      priorYearStart.toISOString().split('T')[0],
-      priorYearEnd.toISOString().split('T')[0]
+      formatDateForApi(priorYearStart),
+      formatDateForApi(priorYearEnd)
     ),
   ]);
 
-  // Filter out missing values and parse
+  // Filter out missing values and parse (use local date parsing to avoid timezone issues)
   const observations = currentData.observations
     .filter((obs) => obs.value !== '.')
     .map((obs) => ({
-      date: new Date(obs.date),
+      date: parseLocalDate(obs.date),
       value: parseFloat(obs.value),
     }))
     .sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -63,7 +103,7 @@ export async function getExchangeRateData(
   const priorYearObservations = priorYearData.observations
     .filter((obs) => obs.value !== '.')
     .map((obs) => ({
-      date: new Date(obs.date),
+      date: parseLocalDate(obs.date),
       value: parseFloat(obs.value),
     }))
     .sort((a, b) => b.date.getTime() - a.date.getTime()); // Most recent first
@@ -89,13 +129,14 @@ export async function getExchangeRateData(
 
 export function filterObservationsByDays(
   observations: { date: Date; value: number }[],
-  days: number
+  days: number,
+  asOfDate?: Date
 ): { date: Date; value: number }[] {
   if (observations.length === 0) return [];
 
-  const latestDate = observations[observations.length - 1].date;
+  const latestDate = asOfDate || observations[observations.length - 1].date;
   const cutoffDate = new Date(latestDate);
   cutoffDate.setDate(cutoffDate.getDate() - days);
 
-  return observations.filter((obs) => obs.date >= cutoffDate);
+  return observations.filter((obs) => obs.date >= cutoffDate && obs.date <= latestDate);
 }
