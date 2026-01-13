@@ -26,6 +26,26 @@ export const SERIES_IDS = {
 // RV Industry Economic Indicators - FRED Series
 export const RV_INDICATORS: RvIndicatorConfig[] = [
   {
+    seriesId: 'PCU441210441210',
+    name: 'PPI: Recreational Vehicle Dealers',
+    shortName: 'RV Dealers PPI',
+    description: 'Producer Price Index for RV Dealers - tracks wholesale pricing trends in the RV industry',
+    unit: 'Index',
+    decimals: 1,
+    sourceUrl: 'https://fred.stlouisfed.org/series/PCU441210441210',
+    sourceName: 'Bureau of Labor Statistics',
+  },
+  {
+    seriesId: 'PCU4412104412101',
+    name: 'PPI: RV Dealer Services',
+    shortName: 'RV Services PPI',
+    description: 'Producer Price Index for RV Dealer Services - tracks service and maintenance pricing',
+    unit: 'Index',
+    decimals: 1,
+    sourceUrl: 'https://fred.stlouisfed.org/series/PCU4412104412101',
+    sourceName: 'Bureau of Labor Statistics',
+  },
+  {
     seriesId: 'UMCSENT',
     name: 'Consumer Sentiment Index',
     shortName: 'Consumer Sentiment',
