@@ -12,6 +12,16 @@ import type { ExchangeRateData, EconomicIndicatorData } from './types';
 import './App.css';
 
 type TabType = 'currency' | 'rv';
+// Time horizon options in days
+const TIME_HORIZON_OPTIONS = [
+  { value: 90, label: '90 Days' },
+  { value: 180, label: '180 Days' },
+  { value: 365, label: '1 Year' },
+  { value: 730, label: '2 Years' },
+  { value: 1095, label: '3 Years' },
+  { value: 1825, label: '5 Years' },
+];
+
 
 function formatDateForDisplay(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number);
@@ -47,10 +57,17 @@ function App() {
   const [rvErrors, setRvErrors] = useState<Record<string, string | null>>({});
   const [rvDataFetched, setRvDataFetched] = useState(false);
 
+  // Time horizon state for RV tab charts
+  const [chart1Days, setChart1Days] = useState<number>(90);
+  const [chart2Days, setChart2Days] = useState<number>(180);
+
   // Shared state
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [maxAvailableDate, setMaxAvailableDate] = useState<string>('');
   const [initializing, setInitializing] = useState(true);
+
+  // Calculate max days needed for data fetching
+  const maxDaysNeeded = Math.max(chart1Days, chart2Days);
 
   // On mount, determine the latest available date from FRED
   useEffect(() => {
@@ -110,7 +127,7 @@ function App() {
   // Fetch RV data when tab is switched to RV or date changes
   useEffect(() => {
     if (!selectedDate || initializing || activeTab !== 'rv') return;
-    if (rvDataFetched && Object.keys(rvData).length > 0) return; // Already fetched
+    // Refetch when time horizon changes
 
     async function fetchRvData() {
       const endDate = parseLocalDate(selectedDate);
@@ -126,7 +143,7 @@ function App() {
       // Fetch all indicators in parallel
       const results = await Promise.allSettled(
         RV_INDICATORS.map(async (indicator) => {
-          const data = await getEconomicIndicatorData(indicator.seriesId, 365, endDate);
+          const data = await getEconomicIndicatorData(indicator.seriesId, maxDaysNeeded + 60, endDate);
           return { seriesId: indicator.seriesId, data };
         })
       );
@@ -155,7 +172,7 @@ function App() {
     }
 
     fetchRvData();
-  }, [selectedDate, initializing, activeTab, rvDataFetched, rvData]);
+  }, [selectedDate, initializing, activeTab, maxDaysNeeded]);
 
   // Reset RV data fetched flag when date changes
   useEffect(() => {
@@ -234,7 +251,32 @@ function App() {
 
       {/* RV Industry Tab Content */}
       {activeTab === 'rv' && (
-        <div className="cards-container rv-cards">
+        <>
+          <div className="time-horizon-selector">
+            <label>Chart 1:</label>
+            <select
+              value={chart1Days}
+              onChange={(e) => setChart1Days(Number(e.target.value))}
+            >
+              {TIME_HORIZON_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <label>Chart 2:</label>
+            <select
+              value={chart2Days}
+              onChange={(e) => setChart2Days(Number(e.target.value))}
+            >
+              {TIME_HORIZON_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="cards-container rv-cards">
           <div className="rv-intro">
             <h2>Key Economic Indicators for the RV Industry</h2>
             <p>
@@ -251,9 +293,12 @@ function App() {
               loading={rvLoading[indicator.seriesId] ?? true}
               error={rvErrors[indicator.seriesId] || null}
               selectedDate={parseLocalDate(selectedDate)}
-            />
-          ))}
-        </div>
+                chart1Days={chart1Days}
+                chart2Days={chart2Days}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

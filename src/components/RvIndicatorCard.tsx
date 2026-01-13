@@ -11,6 +11,8 @@ interface RvIndicatorCardProps {
   loading: boolean;
   error: string | null;
   selectedDate: Date;
+  chart1Days?: number;
+  chart2Days?: number;
 }
 
 function formatValue(value: number, decimals: number): string {
@@ -30,6 +32,13 @@ function formatPercent(value: number): string {
 // Determine if change is "good" based on invert flag
 function isPositiveChange(change: number, invert?: boolean): boolean {
   return invert ? change <= 0 : change >= 0;
+}
+
+// Helper to format days as label
+function formatDaysLabel(days: number): string {
+  if (days < 365) return days + ' Days';
+  const years = Math.round(days / 365);
+  return years === 1 ? '1 Year' : years + ' Years';
 }
 
 interface IndicatorChartProps {
@@ -160,6 +169,8 @@ export function RvIndicatorCard({
   loading,
   error,
   selectedDate,
+  chart1Days = 90,
+  chart2Days = 180,
 }: RvIndicatorCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -210,8 +221,8 @@ export function RvIndicatorCard({
   if (!data) return null;
 
   const isGood = isPositiveChange(data.yoyChange, config.invert);
-  const last90Days = filterObservationsByDays(data.observations, 90, selectedDate);
-  const last180Days = filterObservationsByDays(data.observations, 180, selectedDate);
+  const chart1Data = filterObservationsByDays(data.observations, chart1Days, selectedDate);
+  const chart2Data = filterObservationsByDays(data.observations, chart2Days, selectedDate);
 
   return (
     <div className="rv-indicator-card" ref={cardRef}>
@@ -272,14 +283,14 @@ export function RvIndicatorCard({
         <div className="charts-grid">
           <div className="chart-row">
             <IndicatorChart
-              data={last90Days}
-              title="90 Days"
+              data={chart1Data}
+              title={formatDaysLabel(chart1Days)}
               decimals={config.decimals}
               unit={config.unit}
             />
             <IndicatorChart
-              data={last180Days}
-              title="180 Days"
+              data={chart2Data}
+              title={formatDaysLabel(chart2Days)}
               decimals={config.decimals}
               unit={config.unit}
             />

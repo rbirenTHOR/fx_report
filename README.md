@@ -1,73 +1,58 @@
-# React + TypeScript + Vite
+# Economic Data Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React/TypeScript dashboard for visualizing foreign exchange rates and RV industry economic indicators using data from the Federal Reserve Economic Data (FRED) API.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Currency Exchange Rates
+- Real-time CAD/USD and EUR/USD exchange rates
+- Year-over-year comparisons
+- Interactive 30-day and 90-day trend charts
+- Point-in-time historical data viewing
 
-## React Compiler
+### RV Industry Indicators
+- 8 key economic indicators affecting the RV industry
+- Configurable time horizons (90 days to 5 years)
+- Color-coded YoY changes (positive/negative)
+- Individual card export to PNG
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Quick Start
 
-## Expanding the ESLint configuration
+```bash
+# Install dependencies
+npm install
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+# Start development server
+npm run dev
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Build for production
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Tech Stack
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- **Frontend**: React 19, TypeScript, Vite 7
+- **Charts**: Chart.js with react-chartjs-2
+- **Styling**: CSS with responsive design
+- **Data**: FRED API (Federal Reserve Economic Data)
+- **Hosting**: Azure Static Web Apps
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Live Demo
+
+https://yellow-hill-0cc76f410.1.azurestaticapps.net
+
+## Data Sources
+
+All data is sourced from the Federal Reserve Bank of St. Louis FRED API:
+- Exchange rates (daily)
+- Producer Price Indices (monthly)
+- Consumer Sentiment (monthly)
+- Mortgage rates (weekly)
+- Gas prices (weekly)
+- Unemployment rate (monthly)
+- Vehicle sales (monthly)
+- Disposable income (monthly)
+
+## License
+
+MIT
