@@ -55,11 +55,10 @@ function App() {
   const [rvData, setRvData] = useState<Record<string, EconomicIndicatorData | null>>({});
   const [rvLoading, setRvLoading] = useState<Record<string, boolean>>({});
   const [rvErrors, setRvErrors] = useState<Record<string, string | null>>({});
-  const [rvDataFetched, setRvDataFetched] = useState(false);
 
   // Time horizon state for RV tab charts
-  const [chart1Days, setChart1Days] = useState<number>(90);
-  const [chart2Days, setChart2Days] = useState<number>(180);
+  const [chart1Days, setChart1Days] = useState<number>(365);
+  const [chart2Days, setChart2Days] = useState<number>(1095);
 
   // Shared state
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -168,16 +167,10 @@ function App() {
       setRvData(newData);
       setRvErrors(newErrors);
       setRvLoading(newLoading);
-      setRvDataFetched(true);
     }
 
     fetchRvData();
   }, [selectedDate, initializing, activeTab, maxDaysNeeded]);
-
-  // Reset RV data fetched flag when date changes
-  useEffect(() => {
-    setRvDataFetched(false);
-  }, [selectedDate]);
 
   const displayDate = selectedDate ? formatDateForDisplay(selectedDate) : '';
 
